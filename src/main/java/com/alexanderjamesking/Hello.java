@@ -7,7 +7,7 @@ public class Hello implements Processor{
 
 	@Override
 	public void process(Exchange exchange) throws Exception {
-		System.out.println("hello");
+		System.out.println("..hello");
 	}
 
 }

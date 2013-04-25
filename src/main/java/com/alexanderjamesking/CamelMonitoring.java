@@ -4,43 +4,59 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanException;
 import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
+import javax.management.ReflectionException;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
 public class CamelMonitoring implements Processor {
 
-	private MBeanServer mBeanServer;
+	private MBeanServer server;
 	
 	@Override
 	public void process(Exchange exchange) throws Exception {
 
-		if (mBeanServer == null)
-			mBeanServer = exchange.getContext().getManagementStrategy().getManagementAgent().getMBeanServer();
+		getMBeanServer(exchange);
+
+		List<ObjectName> routeList = getRouteList();
 		
-		ObjectName objName = new ObjectName("org.apache.camel:type=routes,*");
-		List<ObjectName> routeList = new LinkedList<ObjectName>(mBeanServer.queryNames(objName, null));
-		Iterator<ObjectName> routeIterator = routeList.iterator();
+		for (Iterator<ObjectName> iter = routeList.iterator(); iter.hasNext();)
+		{
+		    ObjectName objName = iter.next();
+		    ObjectName objectName = new ObjectName("org.apache.camel:" + objName.getCanonicalKeyPropertyListString());
 
-		while (routeIterator.hasNext()) {
-			System.out.println("-------------------------------------------------------\n");
+		    if ("helloRoute".equals(server.getAttribute(objectName, "RouteId").toString())) {
+				System.out.println("-------hello route stats--------");		
 
-			ObjectName routeRootNode = routeIterator.next();
+				getValue(objectName, "getExchangesTotal");
+				getValue(objectName, "getExchangesCompleted");
+				getValue(objectName, "getExchangesFailed");
+				getValue(objectName, "getRedeliveries");
+				getValue(objectName, "getMeanProcessingTime");
+		    }
+		}
+	}
 
-			String keyProps = routeRootNode.getCanonicalKeyPropertyListString();
-			
-			System.out.println(keyProps);
-			
-			ObjectName routeInfo = new ObjectName("org.apache.camel:" + keyProps);
+	private void getValue(ObjectName objectName, String methodName)
+			throws ReflectionException, InstanceNotFoundException,
+			MBeanException {
+		System.out.println(methodName + ": " + server.invoke(objectName, methodName, null, null).toString());
+	}
 
-			System.out.println(routeInfo);
-			
-			String routeId = (String) mBeanServer.getAttribute(routeInfo, "RouteId");
-			System.out.println("Stats for route: " + routeId);
+	private List<ObjectName> getRouteList() throws MalformedObjectNameException {
+		ObjectName objectName = new ObjectName("org.apache.camel:type=routes,*");
+		List<ObjectName> routeList = new LinkedList<ObjectName>(server.queryNames(objectName, null));
+		return routeList;
+	}
 
-			System.out.println("invoked: " + mBeanServer.invoke(routeInfo, "getExchangesTotal", null, null).toString());
+	private void getMBeanServer(Exchange exchange) {
+		if (server == null) {
+			server = exchange.getContext().getManagementStrategy().getManagementAgent().getMBeanServer();
 		}
 	}
 }
