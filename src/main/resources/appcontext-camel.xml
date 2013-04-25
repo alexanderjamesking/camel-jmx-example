@@ -16,8 +16,6 @@
 
 	<bean id="hello" class="com.alexanderjamesking.Hello" />
 	
-	<bean id="camelMonitoring" class="com.alexanderjamesking.CamelMonitoring">
-		<constructor-arg value="#{myCamel.getManagementStrategy().getManagementAgent().getMBeanServer()}" />
-	</bean>
+	<bean id="camelMonitoring" class="com.alexanderjamesking.CamelMonitoring" />
 	
 </beans>

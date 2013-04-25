@@ -14,13 +14,12 @@ public class CamelMonitoring implements Processor {
 
 	private MBeanServer mBeanServer;
 	
-	public CamelMonitoring(MBeanServer mBeanServer) {
-		this.mBeanServer = mBeanServer;
-	}
-
 	@Override
 	public void process(Exchange exchange) throws Exception {
 
+		if (mBeanServer == null)
+			mBeanServer = exchange.getContext().getManagementStrategy().getManagementAgent().getMBeanServer();
+		
 		ObjectName objName = new ObjectName("org.apache.camel:type=routes,*");
 		List<ObjectName> routeList = new LinkedList<ObjectName>(mBeanServer.queryNames(objName, null));
 		Iterator<ObjectName> routeIterator = routeList.iterator();
